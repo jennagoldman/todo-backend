@@ -6,10 +6,9 @@ const server = express();
 const cors = require('cors');
 const morgan = require('morgan');
 const pg = require('pg');
-
-// Database Client
 const Client = pg.Client;
 const client = new Client(process.env.DATABASE_URL);
+client.connect();
 
 // Server Setup
 const app = express();
@@ -46,7 +45,7 @@ app.post('/api/todos', async(req, res) => {
             VALUES ($1, $2)
             RETURNING *;
         `,
-        [req.body.description, req.body.complete]
+        [req.body.description, false]
         );
         res.json(result.rows[0]);
     }
@@ -59,13 +58,15 @@ app.post('/api/todos', async(req, res) => {
 });
 
 // Update an existing to-do
-app.put('/api/todos', async(req, res) => {
+app.put('/api/todo/:id', async(req, res) => {
     try {
         const result = await client.query(`
             UPDATE todos
-            WHERE id = ${req.body.id}
-        `);
-
+            SET complete = $1
+            WHERE id = ${req.params.id}
+        `,
+        [!req.body.complete]);
+        res.json(result.rows[0]);
     }
     catch (err) {
         console.log(err);
@@ -76,14 +77,14 @@ app.put('/api/todos', async(req, res) => {
 });
 
 // Delete a to-do
-app.delete('api/todo/:id', async(req, res) => {
+app.delete('/api/todo/:id', async(req, res) => {
     try {
         const result = await client.query(`
             DELETE from todos
             WHERE id = ${req.params.id}
             RETURNING *    
         `);
-        res.json(result.rows);
+        res.json(result.rows[0]);
     }
     catch (err) {
         console.log(err);
