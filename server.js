@@ -59,7 +59,9 @@ app.get('/api/todos', async(req, res) => {
             FROM todos
             WHERE user_id = $1
             ORDER BY id ASC
-        `, [req.userId]);
+        `, 
+        [req.userId]
+        );
         res.json(result.rows);
     }
     catch (err) {
@@ -95,9 +97,10 @@ app.put('/api/todo/:id', async(req, res) => {
         const result = await client.query(`
             UPDATE todos
             SET complete = $1
-            WHERE id = ${req.params.id}
+            WHERE id = ${req.params.id} 
+                AND user_id = $2
         `,
-        [req.body.complete]);
+        [req.body.complete, req.userId]);
         res.json(result.rows[0]);
     }
     catch (err) {
