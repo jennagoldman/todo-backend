@@ -65,7 +65,7 @@ app.put('/api/todo/:id', async(req, res) => {
             SET complete = $1
             WHERE id = ${req.params.id}
         `,
-        [!req.body.complete]);
+        [req.body.complete]);
         res.json(result.rows[0]);
     }
     catch (err) {
