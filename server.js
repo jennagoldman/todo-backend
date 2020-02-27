@@ -20,6 +20,36 @@ app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Auth Routes
+const createAuthRoutes = require('./lib/auth/create-auth-routes');
+
+const authRoutes = createAuthRoutes({
+    selectUser(email) {
+        return client.query(`
+            SELECT id, email, hash
+            FROM users
+            WHERE email = $1;
+            `,
+        [email]
+        ).then(result => result.rows[0]);
+    },
+    insertUser(user, hash) {
+        return client.query(`
+        INSERT INTO users (email, hash)
+        VALUES ($1, $2)
+        RETURNING id, email;
+        `,
+        [user.email, hash]
+        ).then(result => result.rows[0]);
+    }
+});
+
+app.use('/api/auth', authRoutes);
+
+const ensureAuth = require('./lib/auth/ensure-auth');
+
+app.use('/api', ensureAuth);
+
 // API Endpoints
 // Get all to-dos
 app.get('/api/todos', async(req, res) => {
@@ -27,8 +57,9 @@ app.get('/api/todos', async(req, res) => {
         const result = await client.query(`
             SELECT *
             FROM todos
+            WHERE user_id = $1
             ORDER BY id ASC
-        `);
+        `, [req.userId]);
         res.json(result.rows);
     }
     catch (err) {
@@ -42,11 +73,11 @@ app.get('/api/todos', async(req, res) => {
 app.post('/api/todos', async(req, res) => {
     try {
         const result = await client.query(`
-            INSERT INTO todos (description, complete)
-            VALUES ($1, $2)
+            INSERT INTO todos (description, complete, user_id)
+            VALUES ($1, $2, $3)
             RETURNING *;
         `,
-        [req.body.description, false]
+        [req.body.description, false, req.userId]
         );
         res.json(result.rows[0]);
     }

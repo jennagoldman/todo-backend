@@ -10,13 +10,19 @@ async function run() {
     try {
         await client.connect();
         
+        await client.query(`
+            INSERT INTO users (email, hash)
+            VALUES ($1, $2);
+            `,
+        ['hi@hello.com', 'abcdefghijkl']);
+
         await Promise.all(
             todos.map(todo => {
                 return client.query(`
-                    INSERT INTO todos (description, complete)
-                    VALUES ($1, $2);
+                    INSERT INTO todos (description, complete, user_id)
+                    VALUES ($1, $2, $3);
                     `,
-                [todo.description, todo.complete]);
+                [todo.description, todo.complete, todo.user_id]);
             })
         );
         console.log('LOAD SEED DATA complete');
