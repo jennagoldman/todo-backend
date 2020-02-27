@@ -27,6 +27,7 @@ app.get('/api/todos', async(req, res) => {
         const result = await client.query(`
             SELECT *
             FROM todos
+            ORDER BY id ASC
         `);
         res.json(result.rows);
     }
